@@ -357,5 +357,9 @@
     "action": "WOWTOUCH_CAMRESET",
     "hold": "WOWTOUCH_CAMSAVE"
   },
-  "_camera_comment": "Cam (right column): tap snaps the camera behind the character; press and hold saves the current angle and zoom as the one it snaps to. Needs the WoWTouchSync addon."
+  "_camera_comment": "Cam (right column): tap snaps the camera behind the character; press and hold saves the current angle and zoom as the one it snaps to. Needs the WoWTouchSync addon.",
+  "joystick_size": 150,
+  "turn_curve": 1.7,
+  "turn_max": 1,
+  "_turn_comment": "Stick: up/down walk, sideways turns at a speed that follows how far you push. joystick_size in px; turn_curve > 1 gives finer control near the centre; turn_max < 1 caps the top turn speed."
 }

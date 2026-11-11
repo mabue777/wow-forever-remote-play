@@ -103,7 +103,7 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color:
 #rightcol .group .btn.active::before, #rightcol .group .btn.active + .btn::before { opacity: 0; }
 
 /* joystick */
-#stick { position: fixed; left: calc(var(--sal) + 14px); bottom: calc(var(--sab) + 10px); width: 112px; height: 112px; border-radius: 50%; z-index: 5;
+#stick { position: fixed; left: calc(var(--sal) + 14px); bottom: calc(var(--sab) + 10px); width: var(--stick, 150px); height: var(--stick, 150px); border-radius: 50%; z-index: 5;
   background: radial-gradient(circle at 50% 50%, rgba(14, 16, 22, 0.25) 0%, rgba(14, 16, 22, 0.55) 70%, rgba(14, 16, 22, 0.7) 100%);
   border: 1px solid var(--stroke); box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(10px) saturate(130%); -webkit-backdrop-filter: blur(10px) saturate(130%); }
@@ -114,7 +114,7 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color:
     linear-gradient(var(--stroke-strong), var(--stroke-strong)) 50% 100% / 1px 8px no-repeat,
     linear-gradient(var(--stroke-strong), var(--stroke-strong)) 0 50% / 8px 1px no-repeat,
     linear-gradient(var(--stroke-strong), var(--stroke-strong)) 100% 50% / 8px 1px no-repeat; }
-#knob { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%;
+#knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.18) 60%, rgba(255, 255, 255, 0.12));
   border: 1px solid var(--stroke-strong); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: transform 220ms var(--ease-out), background-color 160ms var(--ease-out); }
@@ -214,3 +214,6 @@ body.mouse-mode #cursor { display: block; }
 /* camera snap button: top of the right column; flashes when an angle is saved */
 .btn.camera { min-width: 60px; height: 30px; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
 .btn.camera.saved { border-color: var(--ok); color: var(--ok); }
+
+/* turn dead zone: a faint centre band, inside it the stick only walks */
+#stick::after { content: ""; position: absolute; left: 41%; right: 41%; top: 14%; bottom: 14%; border-radius: 10px; background: rgba(255, 255, 255, 0.04); pointer-events: none; }

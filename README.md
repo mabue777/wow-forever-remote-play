@@ -39,7 +39,7 @@ character you played last and serves `/bindings`.
 Unbound actions render struck through.
 
 ## Controls (web/layout.json — edit and reload)
-- Left stick: W/S forward-back, Q/E strafe. Right area: drag = right-mouse camera look, tap = left click (target), long-press = right click (interact/loot), pinch = zoom.
+- Left stick (150 px): up/down walk; sideways turns at a speed that follows how far you push (the Mac pulses the turn key, see server/turn.go). The middle of the stick only walks. Tune with joystick_size, turn_curve, turn_max in layout.json. Right area: drag = right-mouse camera look, tap = left click (target), long-press = right click (interact/loot), pinch = zoom.
 - Bottom: action bar 1-12. Shift/Ctrl toggles apply to the next action button.
 - Right column: stances (Ctrl+1/2/3), Tab target, Jump. Top: Esc, Map, Bags, Char, Spells, Talents, Quests, Chat, auto-run, Sit, nameplates.
 - Chat opens the iPhone keyboard; return sends via Enter, text, Enter.

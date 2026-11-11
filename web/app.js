@@ -427,28 +427,46 @@ function setKeys(want) {
   for (const k of held) if (!want.has(k)) { const r = resolve(j[k]); if (r) refUp(r); held.delete(k); }
   for (const k of want) if (!held.has(k)) { const r = resolve(j[k]); if (r) refDown(r); held.add(k); }
 }
-stick.addEventListener("pointerdown", (e) => { stickId = e.pointerId; stick.setPointerCapture(e.pointerId); stick.classList.add("live"); stickMove(e); });
+stick.addEventListener("pointerdown", (e) => { stickId = e.pointerId; try { stick.setPointerCapture(e.pointerId); } catch (err) {} stick.classList.add("live"); stickMove(e); });
 stick.addEventListener("pointermove", (e) => { if (e.pointerId === stickId) stickMove(e); });
+// Forward/back are plain key holds. Sideways is an analog turn rate: the Mac pulses the turn key so a light push
+// turns slowly and a full push turns at full speed (see server/turn.go). A small dead zone and a curve keep
+// fine aim near the centre.
+let turnSent = 0, turnSentAt = 0;
+function sendTurn(rate, force) {
+  const now = performance.now();
+  if (!force && Math.abs(rate - turnSent) < 0.03 && (rate === 0 || now - turnSentAt < 200)) return;
+  const j = profile().joystick, l = resolve(j.left), r = resolve(j.right);
+  if (!l || !r || l.mouse || r.mouse) return;
+  turnSent = rate; turnSentAt = now;
+  send({ t: "turn", dx: rate, keys: [l.code, l.flags | stickyFlags(), r.code, r.flags | stickyFlags()] });
+}
+// keep a held turn alive (the Mac stops turning after 600 ms of silence)
+setInterval(() => { if (stickId !== null && turnSent !== 0) sendTurn(turnSent, true); }, 200);
+function turnRate(nx) {
+  const dead = 0.18, curve = (layout && layout.turn_curve) || 1.7, max = (layout && layout.turn_max) || 1;
+  const a = Math.abs(nx);
+  if (a < dead) return 0;
+  return Math.sign(nx) * Math.min(1, Math.pow((a - dead) / (1 - dead), curve) * max);
+}
 function stickMove(e) {
   const r = stick.getBoundingClientRect();
   const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
   let dx = e.clientX - cx, dy = e.clientY - cy;
-  const max = r.width / 2 - 20, d = Math.hypot(dx, dy);
+  const max = r.width / 2 - 16, d = Math.hypot(dx, dy);
   if (d > max) { dx *= max / d; dy *= max / d; }
   knob.style.transform = `translate(${dx}px, ${dy}px)`;
+  const nx = dx / max, ny = dy / max;
   const want = new Set();
-  if (d > 18) {
-    const a = Math.atan2(-dy, dx) * 180 / Math.PI; // 0 = right, 90 = up
-    if (a > 22.5 && a < 157.5) want.add("forward");
-    if (a < -22.5 && a > -157.5) want.add("back");
-    if (Math.abs(a) < 67.5) want.add("right");
-    if (Math.abs(a) > 112.5) want.add("left");
-  }
+  if (ny < -0.35) want.add("forward");
+  if (ny > 0.35) want.add("back");
   setKeys(want);
+  const rate = turnRate(nx);
+  sendTurn(rate, rate === 0 && turnSent !== 0);
 }
 function stickEnd(e) {
   if (e.pointerId !== stickId) return;
-  stickId = null; stick.classList.remove("live"); knob.style.transform = ""; setKeys(new Set());
+  stickId = null; stick.classList.remove("live"); knob.style.transform = ""; setKeys(new Set()); sendTurn(0, true);
 }
 stick.addEventListener("pointerup", stickEnd);
 stick.addEventListener("pointercancel", stickEnd);
@@ -735,5 +753,5 @@ window.addEventListener("blur", () => send({ t: "release" }));
 document.addEventListener("gesturestart", (e) => e.preventDefault());
 document.addEventListener("dblclick", (e) => e.preventDefault());
 
-fetch("layout.json").then((r) => r.json()).then(async (l) => { layout = l; await loadBindings(); build(); setMouseMode(mouseMode); connect(); });
+fetch("layout.json").then((r) => r.json()).then(async (l) => { layout = l; document.documentElement.style.setProperty("--stick", (l.joystick_size || 150) + "px"); await loadBindings(); build(); setMouseMode(mouseMode); connect(); });
 video.addEventListener("loadedmetadata", () => mouseMode && drawCursor());

@@ -66,6 +66,11 @@ type hub struct {
 	lastInput atomic.Int64 // unix ms of the last input message from any phone
 	keyMu     sync.Mutex
 	lastKey   []byte // most recent keyframe access unit (Annex-B), for /snapshot
+	turnMu    sync.Mutex
+	turnRate  float64 // -1 left .. 1 right, see turn.go
+	turnLeft  turnKey
+	turnRight turnKey
+	turnAt    time.Time
 }
 
 func main() {
@@ -131,6 +136,7 @@ func main() {
 	}
 	go h.focusGuard()
 	go h.mouseWatchdog()
+	go h.turnLoop()
 	// make sure a Ctrl-C / kill also takes ffmpeg down, otherwise it keeps the screen device busy
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -487,6 +493,7 @@ func (h *hub) handleWS(w http.ResponseWriter, r *http.Request) {
 		h.mu.Lock()
 		h.peers--
 		h.mu.Unlock()
+		h.stopTurn()
 		h.releaseAll()
 		log.Printf("client disconnected")
 	}()
@@ -514,7 +521,7 @@ func (h *hub) handleWS(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		switch m.T {
-		case "key", "tap", "keychar", "move", "moveabs", "btn", "scroll", "text", "hold":
+		case "key", "tap", "keychar", "turn", "move", "moveabs", "btn", "scroll", "text", "hold":
 			h.lastInput.Store(time.Now().UnixMilli())
 			h.holdMu.Lock()
 			h.lastHold = time.Now()
@@ -589,7 +596,12 @@ func (h *hub) handleWS(w http.ResponseWriter, r *http.Request) {
 			setMousePath(m.Code)
 			log.Printf("mouse path set to %d", m.Code)
 		case "release":
+			h.stopTurn()
 			h.releaseAll()
+		case "turn": // dx = rate -1..1; keys = [left code, left flags, right code, right flags]
+			if len(m.Keys) == 4 {
+				h.setTurn(m.DX, turnKey{m.Keys[0], m.Keys[1]}, turnKey{m.Keys[2], m.Keys[3]})
+			}
 		case "ping":
 			send(msg{T: "pong"})
 		case "stats":
@@ -606,7 +618,7 @@ func (h *hub) key(code int, down bool, flags int) {
 		delete(h.held, code)
 	}
 	h.keysMu.Unlock()
-	keyEvent(code, down, flags)
+	postKey(code, down, flags)
 }
 
 func (h *hub) releaseAll() {
