@@ -217,6 +217,7 @@ const cam = $("#cam");
 const touches = new Map(); // pointerId -> state
 let pinchDist = null;
 cam.addEventListener("pointerdown", (e) => {
+  if (mouseMode) return padDown(e);
   if (e.isPrimary && touches.size) { // leftovers from a touch whose end we never saw
     for (const s of touches.values()) { clearTimeout(s.timer); if (s.right) send({ t: "btn", btn: 1, down: false }); }
     touches.clear(); pinchDist = null;
@@ -244,6 +245,7 @@ cam.addEventListener("pointerdown", (e) => {
   }
 });
 cam.addEventListener("pointermove", (e) => {
+  if (mouseMode) return padMove(e);
   const st = touches.get(e.pointerId);
   if (!st) return;
   const dx = e.clientX - st.x, dy = e.clientY - st.y;
@@ -281,6 +283,7 @@ cam.addEventListener("pointermove", (e) => {
 setInterval(() => { for (const st of touches.values()) if (st.right) { send({ t: "hold" }); break; } }, 150);
 
 function camEnd(e) {
+  if (mouseMode) return padEnd(e);
   const st = touches.get(e.pointerId);
   if (!st) return;
   touches.delete(e.pointerId);
@@ -297,6 +300,123 @@ function camEnd(e) {
 }
 cam.addEventListener("pointerup", camEnd);
 cam.addEventListener("pointercancel", camEnd);
+
+// ---------- mouse mode: the screen is a trackpad with a visible cursor (like Jump Desktop) ----------
+// one finger slides the cursor, tap = left click, tap then touch-and-drag = drag with the left button held,
+// two-finger tap or long press = right click, two-finger slide = scroll (camera zoom in game)
+let mouseMode = localStorage.getItem("wowtouch.mousemode") === "on";
+const cursorEl = $("#cursor");
+const pad = { fingers: new Map(), cx: 0.5, cy: 0.5, lastTapEnd: 0, dragging: false, maxFingers: 0, moved: false,
+  start: 0, timer: null, longed: false, scrollY: null, lastMoveSent: 0, moveTimer: null };
+function drawCursor() {
+  const r = frameRect();
+  cursorEl.style.transform = `translate(${r.x + pad.cx * r.w}px, ${r.y + pad.cy * r.h}px)`;
+}
+function sendCursor(now) {
+  // throttle to ~30 per second; always send the final position
+  clearTimeout(pad.moveTimer);
+  const due = 33 - (performance.now() - pad.lastMoveSent);
+  if (now || due <= 0) { pad.lastMoveSent = performance.now(); send({ t: "moveabs", x: pad.cx, y: pad.cy }); }
+  else pad.moveTimer = setTimeout(() => sendCursor(true), due);
+}
+// WoW ignores a click that arrives within ~100 ms of a move, so clicks wait for the cursor to settle
+let clickFreeAt = 0; // clicks queue up so a fast double tap never overlaps press and release
+function clickAt(btn) {
+  sendCursor(true);
+  const p = { x: pad.cx, y: pad.cy };
+  const at = Math.max(100, clickFreeAt - performance.now());
+  clickFreeAt = performance.now() + at + 150;
+  setTimeout(() => send({ t: "btn", btn, down: true, x: p.x, y: p.y }), at);
+  setTimeout(() => send({ t: "btn", btn, down: false, x: p.x, y: p.y }), at + 120);
+  navigator.vibrate && navigator.vibrate(btn ? 12 : 6);
+}
+function padDown(e) {
+  try { cam.setPointerCapture(e.pointerId); } catch (err) {}
+  pad.fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  pad.maxFingers = Math.max(pad.maxFingers, pad.fingers.size);
+  if (pad.fingers.size === 1) {
+    pad.moved = false; pad.longed = false; pad.start = performance.now(); pad.maxFingers = 1;
+    pad.sx = e.clientX; pad.sy = e.clientY;
+    const quickSecondTouch = performance.now() - pad.lastTapEnd < 300;
+    // tap, then touch again: arm a drag. The left button goes down once the finger moves and stays down until it
+    // lifts (drag items and spells). If the finger lifts without moving it was a double-click.
+    pad.dragging = quickSecondTouch; pad.dragDown = false;
+    clearTimeout(pad.timer);
+    pad.timer = setTimeout(() => {
+      if (!pad.moved && !pad.dragging && pad.fingers.size === 1) { pad.longed = true; clickAt(1); }
+    }, 500);
+  } else {
+    clearTimeout(pad.timer);
+    const ys = [...pad.fingers.values()].map((f) => f.y);
+    pad.scrollY = ys.reduce((a, b) => a + b, 0) / ys.length;
+  }
+}
+function padMove(e) {
+  const f = pad.fingers.get(e.pointerId);
+  if (!f) return;
+  const dx = e.clientX - f.x, dy = e.clientY - f.y;
+  f.x = e.clientX; f.y = e.clientY;
+  if (Math.hypot(e.clientX - pad.sx, e.clientY - pad.sy) > 8) {
+    pad.moved = true; clearTimeout(pad.timer);
+    if (pad.dragging && !pad.dragDown) { // press where the cursor rests (no move for >100 ms), then follow the finger
+      pad.dragDown = true; pad.dragStart = performance.now();
+      send({ t: "btn", btn: 0, down: true, x: pad.cx, y: pad.cy });
+    }
+  }
+  if (pad.fingers.size >= 2) {
+    const ys = [...pad.fingers.values()].map((p) => p.y);
+    const y = ys.reduce((a, b) => a + b, 0) / ys.length;
+    if (pad.scrollY != null && Math.abs(y - pad.scrollY) > 16) { send({ t: "scroll", dy: y > pad.scrollY ? 1 : -1 }); pad.scrollY = y; pad.moved = true; }
+    return;
+  }
+  // relative motion with a little acceleration: slow for precision, fast to cross the screen
+  const r = frameRect();
+  const speed = (layout && layout.trackpad_speed) || 1.4;
+  const accel = 1 + Math.min(2, Math.hypot(dx, dy) / 12);
+  pad.cx = Math.min(1, Math.max(0, pad.cx + dx * speed * accel / r.w));
+  pad.cy = Math.min(1, Math.max(0, pad.cy + dy * speed * accel / r.h));
+  drawCursor();
+  sendCursor(false);
+}
+function padEnd(e) {
+  if (!pad.fingers.delete(e.pointerId)) return;
+  if (pad.fingers.size) return;
+  clearTimeout(pad.timer);
+  pad.scrollY = null;
+  if (pad.dragging) {
+    pad.dragging = false; pad.lastTapEnd = 0;
+    if (pad.dragDown) {
+      pad.dragDown = false;
+      sendCursor(true);
+      // WoW ignores a release that comes less than ~120 ms after the press
+      const wait = Math.max(60, 150 - (performance.now() - pad.dragStart));
+      setTimeout(() => send({ t: "btn", btn: 0, down: false, x: pad.cx, y: pad.cy }), wait);
+      return;
+    }
+    if (!pad.moved && performance.now() - pad.start < 300) clickAt(0); // second click of a double-click
+    return;
+  }
+  const short = performance.now() - pad.start < 300;
+  if (!pad.moved && !pad.longed && short) {
+    if (pad.maxFingers >= 2) clickAt(1);
+    else { clickAt(0); pad.lastTapEnd = performance.now(); }
+  }
+}
+// a held drag tells the Mac it is still there, like the camera drag does
+setInterval(() => { if (mouseMode && pad.dragDown) send({ t: "hold" }); }, 150);
+window.addEventListener("resize", () => mouseMode && drawCursor());
+function setMouseMode(on) {
+  mouseMode = on;
+  localStorage.setItem("wowtouch.mousemode", on ? "on" : "off");
+  document.body.classList.toggle("mouse-mode", on);
+  document.querySelectorAll(".btn.mousemode").forEach((b) => b.classList.toggle("on", on));
+  // leave nothing held from the other mode
+  for (const st of touches.values()) { clearTimeout(st.timer); if (st.right) send({ t: "btn", btn: 1, down: false }); }
+  touches.clear(); pad.fingers.clear(); pinchDist = null;
+  if (pad.dragDown) send({ t: "btn", btn: 0, down: false });
+  pad.dragging = pad.dragDown = false;
+  if (on) { drawCursor(); sendCursor(true); }
+}
 
 // ---------- joystick -> WQSE ----------
 const stick = $("#stick"), knob = $("#knob");
@@ -345,6 +465,12 @@ function makeBtn(def, cls = "") {
   }
   if (def.ui === "chat") { b.addEventListener("pointerdown", openChat); return b; }
   if (def.ui === "menu") { b.addEventListener("pointerdown", openMenu); return b; }
+  if (def.ui === "mousemode") {
+    b.classList.add("toggle-text", "mousemode");
+    b.classList.toggle("on", mouseMode);
+    b.addEventListener("pointerdown", (e) => { e.preventDefault(); setMouseMode(!mouseMode); });
+    return b;
+  }
   if (def.ui === "hud") { b.addEventListener("pointerdown", (e) => { e.preventDefault(); setHud(false); }); return b; }
   if (def.ui === "refresh") {
     b.classList.add("icon");
@@ -534,4 +660,5 @@ window.addEventListener("blur", () => send({ t: "release" }));
 document.addEventListener("gesturestart", (e) => e.preventDefault());
 document.addEventListener("dblclick", (e) => e.preventDefault());
 
-fetch("layout.json").then((r) => r.json()).then(async (l) => { layout = l; await loadBindings(); build(); connect(); });
+fetch("layout.json").then((r) => r.json()).then(async (l) => { layout = l; await loadBindings(); build(); setMouseMode(mouseMode); connect(); });
+video.addEventListener("loadedmetadata", () => mouseMode && drawCursor());

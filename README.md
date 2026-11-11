@@ -44,6 +44,12 @@ Unbound actions render struck through.
 - Right column: stances (Ctrl+1/2/3), Tab target, Jump. Top: Esc, Map, Bags, Char, Spells, Talents, Quests, Chat, auto-run, Sit, nameplates.
 - Chat opens the iPhone keyboard; return sends via Enter, text, Enter.
 
+## Mouse mode
+Mouse (top left) turns the screen into a trackpad with a cursor, like Jump Desktop. Slide one finger to move the cursor,
+tap = left click, tap then touch-and-slide = drag with the left button held, two-finger tap or long press = right click,
+two-finger slide = scroll. Tap Mouse again for the normal touch mode (tap where you touch, drag turns the camera).
+Speed: `trackpad_speed` in layout.json. Remembered on the phone.
+
 ## HUD
 Hide (top left) removes all phone controls; camera drag, tap and long-press still work. The eye icon in the corner brings
 them back. The choice is remembered on the phone. Mac menu > Game interface toggles the game's own UI (Alt-Z).

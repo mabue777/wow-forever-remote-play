@@ -187,3 +187,10 @@ body.idle #status.ok { opacity: 0.2; }
   background: var(--glass); border: 1px solid var(--stroke); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 body.hud-off #hudshow { display: grid; }
 body.hud-off .row, body.hud-off .col, body.hud-off #stick { display: none; }
+
+/* mouse mode: a cursor drawn over the video; its tip is the click point */
+#cursor { display: none; position: fixed; left: 0; top: 0; z-index: 4; pointer-events: none; margin: -2px 0 0 -3px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); will-change: transform; }
+body.mouse-mode #cursor { display: block; }
+.btn.mousemode.on { color: var(--accent); }
+.btn.mousemode.on::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 3px; height: 2px; border-radius: 1px; background: var(--accent); }
