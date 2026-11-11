@@ -20,6 +20,7 @@ static int wt_char_for_key(int keycode, UniChar *out, int outLen) {
 import "C"
 import (
 	"strings"
+	"sync"
 	"unicode/utf16"
 )
 
@@ -45,4 +46,16 @@ func charToKeycode() map[string]int {
 		}
 	}
 	return m
+}
+
+var (
+	charKeysOnce sync.Once
+	charKeys     map[string]int
+)
+
+// keyForChar returns the key code that types ch (any case) on the Mac's current keyboard layout.
+func keyForChar(ch string) (int, bool) {
+	charKeysOnce.Do(func() { charKeys = charToKeycode() })
+	code, ok := charKeys[strings.ToUpper(ch)]
+	return code, ok
 }

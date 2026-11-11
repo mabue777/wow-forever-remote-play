@@ -465,6 +465,7 @@ function makeBtn(def, cls = "") {
   }
   if (def.ui === "chat") { b.addEventListener("pointerdown", openChat); return b; }
   if (def.ui === "menu") { b.addEventListener("pointerdown", openMenu); return b; }
+  if (def.ui === "keys") { b.addEventListener("pointerdown", openKeys); return b; }
   if (def.ui === "mousemode") {
     b.classList.add("toggle-text", "mousemode");
     b.classList.toggle("on", mouseMode);
@@ -589,6 +590,57 @@ chatinput.addEventListener("keydown", (e) => {
     setTimeout(() => { send({ t: "text", text }); setTimeout(() => tap("Return"), 120); }, 180);
   } else if (e.key === "Escape") { chatbox.hidden = true; chatinput.blur(); }
 });
+
+// ---------- key mode: the iPhone keyboard presses game keys (O, N, Shift-R) instead of typing chat ----------
+const keybar = $("#keybar"), keyinput = $("#keyinput"), keylast = $("#keylast");
+const keyMods = { shift: false, ctrl: false, alt: false, cmd: false };
+function keyModFlags() { let f = 0; for (const m in keyMods) if (keyMods[m]) f |= FLAG[m]; return f; }
+function clearKeyMods() { for (const m in keyMods) keyMods[m] = false; keybar.querySelectorAll(".kmod").forEach((b) => b.classList.remove("on")); }
+function showSent(label) {
+  keylast.textContent = label;
+  keylast.classList.remove("flash"); void keylast.offsetWidth; keylast.classList.add("flash");
+}
+function modLabel(f) { return (f & FLAG.ctrl ? "⌃" : "") + (f & FLAG.alt ? "⌥" : "") + (f & FLAG.shift ? "⇧" : "") + (f & FLAG.cmd ? "⌘" : ""); }
+// one character from the keyboard -> one key press on the Mac (its own layout picks the key)
+function pressChar(ch) {
+  let flags = keyModFlags();
+  if (ch === " ") { send({ t: "tap", code: KEYS.Space, flags }); showSent(modLabel(flags) + "Space"); clearKeyMods(); return; }
+  if (ch !== ch.toLowerCase()) flags |= FLAG.shift; // a capital letter is Shift + that key
+  send({ t: "keychar", text: ch.toLowerCase(), flags });
+  showSent(modLabel(flags) + ch.toUpperCase());
+  clearKeyMods();
+}
+function pressNamed(name, label) {
+  const flags = keyModFlags();
+  send({ t: "tap", code: KEYS[name], flags });
+  showSent(modLabel(flags) + label);
+  clearKeyMods();
+}
+function openKeys(e) {
+  e && e.preventDefault();
+  keybar.hidden = false; keyinput.value = ""; keylast.textContent = "Press a key"; keylast.classList.remove("flash");
+  keyinput.focus();
+}
+function closeKeys() { keybar.hidden = true; keyinput.blur(); clearKeyMods(); }
+keyinput.addEventListener("beforeinput", (e) => {
+  if (e.inputType === "insertText" && e.data) { e.preventDefault(); [...e.data].forEach(pressChar); }
+  else if (e.inputType === "deleteContentBackward") { e.preventDefault(); pressNamed("Delete", "Delete"); }
+  else if (e.inputType === "insertLineBreak" || e.inputType === "insertParagraph") { e.preventDefault(); pressNamed("Return", "Enter"); }
+});
+// fallback for keyboards that skip beforeinput (predictive text): send whatever landed in the field, then clear it
+keyinput.addEventListener("input", () => { const v = keyinput.value; keyinput.value = ""; [...v].forEach(pressChar); });
+keyinput.addEventListener("keydown", (e) => { // hardware keyboards
+  if (e.key === "Escape") { e.preventDefault(); pressNamed("Escape", "Esc"); }
+  else if (e.key === "Tab") { e.preventDefault(); pressNamed("Tab", "Tab"); }
+});
+keyinput.addEventListener("blur", () => { if (!keybar.hidden) setTimeout(() => { if (!keybar.hidden && document.activeElement !== keyinput) closeKeys(); }, 250); });
+keybar.querySelectorAll("[data-mod]").forEach((b) => b.addEventListener("pointerdown", (e) => {
+  e.preventDefault(); const m = b.dataset.mod; keyMods[m] = !keyMods[m]; b.classList.toggle("on", keyMods[m]); keyinput.focus();
+}));
+keybar.querySelectorAll("[data-key]").forEach((b) => b.addEventListener("pointerdown", (e) => {
+  e.preventDefault(); pressNamed(b.dataset.key, b.textContent); keyinput.focus();
+}));
+$("#keydone").addEventListener("pointerdown", (e) => { e.preventDefault(); closeKeys(); });
 
 // ---------- Mac menu: launcher and desktop helpers ----------
 const MENU = [

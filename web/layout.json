@@ -73,6 +73,10 @@
       "ui": "chat"
     },
     {
+      "label": "Keys",
+      "ui": "keys"
+    },
+    {
       "label": "Run",
       "action": [
         "STARTAUTORUN",
@@ -346,5 +350,6 @@
   "_mouse_comment": "mouse:false makes the phone send no mouse events at all (taps, camera drag, pinch): an emergency switch.",
   "_hud_comment": "The Hide button removes all phone controls; the eye icon in the corner brings them back. Menu > Game interface hides the game's own UI (Alt-Z).",
   "trackpad_speed": 1.4,
-  "_mousemode_comment": "Mouse button: the screen becomes a trackpad with a cursor. Slide = move, tap = left click, tap then touch-and-drag = drag, two-finger tap or long press = right click, two-finger slide = scroll. trackpad_speed sets cursor speed."
+  "_mousemode_comment": "Mouse button: the screen becomes a trackpad with a cursor. Slide = move, tap = left click, tap then touch-and-drag = drag, two-finger tap or long press = right click, two-finger slide = scroll. trackpad_speed sets cursor speed.",
+  "_keys_comment": "Keys opens the iPhone keyboard; every key you press is pressed in the game (O, N, capital = Shift). Chat still types a chat message."
 }

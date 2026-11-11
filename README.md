@@ -44,6 +44,11 @@ Unbound actions render struck through.
 - Right column: stances (Ctrl+1/2/3), Tab target, Jump. Top: Esc, Map, Bags, Char, Spells, Talents, Quests, Chat, auto-run, Sit, nameplates.
 - Chat opens the iPhone keyboard; return sends via Enter, text, Enter.
 
+## Keys
+Keys (top right) opens the iPhone keyboard; every key you press is pressed in the game, so key bindings fire
+(O = social, N = talents, a capital letter = Shift + that key). The bar at the top adds one-shot ⇧ ⌃ ⌥ ⌘, Esc and
+Tab, and shows the last key sent. The Mac's keyboard layout picks the physical key. Chat still sends a chat message.
+
 ## Mouse mode
 Mouse (top left) turns the screen into a trackpad with a cursor, like Jump Desktop. Slide one finger to move the cursor,
 tap = left click, tap then touch-and-slide = drag with the left button held, two-finger tap or long press = right click,

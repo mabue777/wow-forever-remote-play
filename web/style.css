@@ -194,3 +194,19 @@ body.hud-off .row, body.hud-off .col, body.hud-off #stick { display: none; }
 body.mouse-mode #cursor { display: block; }
 .btn.mousemode.on { color: var(--accent); }
 .btn.mousemode.on::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 3px; height: 2px; border-radius: 1px; background: var(--accent); }
+
+/* key mode: a slim bar at the top while the iPhone keyboard covers the bottom */
+#keybar { position: fixed; z-index: 55; top: calc(var(--sat) + 6px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 4px;
+  padding: 4px; border-radius: 12px; background: var(--glass-strong); border: 1px solid var(--stroke); box-shadow: var(--shadow);
+  backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%); }
+#keybar[hidden] { display: none; }
+/* the field must stay focusable for the keyboard to stay up, but nobody needs to see it */
+#keyinput { position: absolute; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; font-size: 16px; -webkit-user-select: text; user-select: text; }
+#keybar .kmod, #keybar .kkey, #keydone { height: 30px; min-width: 32px; padding: 0 9px; display: grid; place-items: center; border-radius: 8px;
+  font-size: 13px; font-weight: 600; color: var(--muted); border: 1px solid transparent; }
+#keybar .kmod.on { color: var(--text); border-color: rgba(240, 180, 60, 0.6); background: rgba(240, 180, 60, 0.12); }
+#keybar .ksep { width: 1px; height: 18px; background: var(--stroke); margin: 0 2px; }
+#keylast { min-width: 92px; padding: 0 10px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text); }
+#keylast.flash { animation: keyflash 500ms var(--ease-out); }
+@keyframes keyflash { from { color: var(--accent); transform: scale(1.12); } to { color: var(--text); transform: scale(1); } }
+#keydone { color: var(--accent-ink); background: var(--accent); }

@@ -514,7 +514,7 @@ func (h *hub) handleWS(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		switch m.T {
-		case "key", "tap", "move", "moveabs", "btn", "scroll", "text", "hold":
+		case "key", "tap", "keychar", "move", "moveabs", "btn", "scroll", "text", "hold":
 			h.lastInput.Store(time.Now().UnixMilli())
 			h.holdMu.Lock()
 			h.lastHold = time.Now()
@@ -568,6 +568,14 @@ func (h *hub) handleWS(w http.ResponseWriter, r *http.Request) {
 			scroll(int(m.DY))
 		case "text":
 			typeText(m.Text)
+		case "keychar": // one key from the phone keyboard, pressed as a key so game key bindings fire (O, N, Shift-R)
+			if code, ok := keyForChar(m.Text); ok {
+				h.key(code, true, m.Flags)
+				time.Sleep(25 * time.Millisecond)
+				h.key(code, false, m.Flags)
+			} else {
+				typeText(m.Text) // no plain key makes this character on the Mac's layout: type it instead
+			}
 		case "launch":
 			// fixed command: open the Battle.net app on the WoW tab; the phone taps Play from there
 			go func() {
