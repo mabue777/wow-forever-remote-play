@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WoW Touch">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+<title>WoW Touch</title>
+</head>
+<body>
+<video id="video" autoplay playsinline muted></video>
+<div id="cam"></div>
+<div id="status">Connecting…</div>
+<div id="perm" hidden></div>
+<div id="rotate">Rotate your phone to landscape</div>
+
+<div id="topleft" class="row"></div>
+<div id="topright" class="row"></div>
+<div id="mods" class="row"></div>
+<div id="rightcol" class="col"></div>
+<div id="bar2" class="row"></div>
+<div id="bar" class="row"></div>
+<div id="stick"><div id="knob"></div></div>
+
+<div id="hudshow" role="button" aria-label="Show controls"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg></div>
+<div id="picker" hidden></div>
+<div id="menu" hidden></div>
+<div id="chatbox" hidden>
+  <input id="chatinput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Say something… return sends, esc cancels">
+</div>
+<script src="app.js"></script>
+</body>
+</html>

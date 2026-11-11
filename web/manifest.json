@@ -1,0 +1,1 @@
+{ "name": "WoW Touch", "short_name": "WoW Touch", "display": "fullscreen", "orientation": "landscape", "background_color": "#000", "theme_color": "#000", "start_url": "/", "icons": [{"src":"icon.png","sizes":"180x180","type":"image/png"}] }

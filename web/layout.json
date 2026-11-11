@@ -1,0 +1,344 @@
+{
+  "_comment": "Buttons name WoW *actions*; the server resolves each to the key your current character has bound (defaults + bindings-cache.wtf). 'ui' buttons are app functions. Edit and reload the page.",
+  "camera_sensitivity": 2.2,
+  "joystick": {
+    "forward": "MOVEFORWARD",
+    "back": "MOVEBACKWARD",
+    "left": "TURNLEFT",
+    "right": "TURNRIGHT"
+  },
+  "actionbar": {
+    "label": "Main bar",
+    "actions": [
+      "ACTIONBUTTON1",
+      "ACTIONBUTTON2",
+      "ACTIONBUTTON3",
+      "ACTIONBUTTON4",
+      "ACTIONBUTTON5",
+      "ACTIONBUTTON6",
+      "ACTIONBUTTON7",
+      "ACTIONBUTTON8",
+      "ACTIONBUTTON9",
+      "ACTIONBUTTON10",
+      "ACTIONBUTTON11",
+      "ACTIONBUTTON12"
+    ]
+  },
+  "actionbar2": {
+    "label": "Bottom-left bar",
+    "actions": [
+      "MULTIACTIONBAR1BUTTON1",
+      "MULTIACTIONBAR1BUTTON2",
+      "MULTIACTIONBAR1BUTTON3",
+      "MULTIACTIONBAR1BUTTON4",
+      "MULTIACTIONBAR1BUTTON5",
+      "MULTIACTIONBAR1BUTTON6",
+      "MULTIACTIONBAR1BUTTON7",
+      "MULTIACTIONBAR1BUTTON8",
+      "MULTIACTIONBAR1BUTTON9",
+      "MULTIACTIONBAR1BUTTON10",
+      "MULTIACTIONBAR1BUTTON11",
+      "MULTIACTIONBAR1BUTTON12"
+    ]
+  },
+  "top_left": [
+    {
+      "label": "Mac",
+      "ui": "menu"
+    },
+    {
+      "label": "Hide",
+      "ui": "hud"
+    },
+    {
+      "label": "Esc",
+      "action": "TOGGLEGAMEMENU"
+    },
+    {
+      "label": "Map",
+      "action": "TOGGLEWORLDMAP"
+    },
+    {
+      "label": "Bags",
+      "action": "TOGGLEBACKPACK"
+    }
+  ],
+  "top_right": [
+    {
+      "label": "Chat",
+      "ui": "chat"
+    },
+    {
+      "label": "Run",
+      "action": [
+        "STARTAUTORUN",
+        "TOGGLEAUTORUN"
+      ]
+    },
+    {
+      "label": "Use",
+      "action": "INTERACTTARGET"
+    },
+    {
+      "label": "Sit",
+      "action": "SITORSTAND"
+    },
+    {
+      "label": "Refresh",
+      "ui": "refresh"
+    }
+  ],
+  "modifiers": [
+    {
+      "label": "⇧",
+      "mod": "shift"
+    },
+    {
+      "label": "⌃",
+      "mod": "ctrl"
+    },
+    {
+      "label": "⌥",
+      "mod": "alt"
+    },
+    {
+      "label": "⌘",
+      "mod": "cmd"
+    }
+  ],
+  "profiles": {
+    "warrior": {
+      "right_column": [
+        {
+          "label": "Battle",
+          "action": "SHAPESHIFTBUTTON1"
+        },
+        {
+          "label": "Def",
+          "action": "SHAPESHIFTBUTTON2"
+        },
+        {
+          "label": "Zerk",
+          "action": "SHAPESHIFTBUTTON3"
+        },
+        {
+          "label": "Tab",
+          "action": "TARGETNEARESTENEMY",
+          "big": true
+        },
+        {
+          "label": "Jump",
+          "action": "JUMP",
+          "big": true
+        }
+      ]
+    },
+    "hunter": {
+      "right_column": [
+        {
+          "label": "Pet Atk",
+          "action": "BONUSACTIONBUTTON1"
+        },
+        {
+          "label": "Follow",
+          "action": "BONUSACTIONBUTTON2"
+        },
+        {
+          "label": "Stay",
+          "action": "BONUSACTIONBUTTON3"
+        },
+        {
+          "label": "Pet 1",
+          "action": "BONUSACTIONBUTTON4"
+        },
+        {
+          "label": "Pet 2",
+          "action": "BONUSACTIONBUTTON5"
+        },
+        {
+          "label": "Tab",
+          "action": "TARGETNEARESTENEMY",
+          "big": true
+        },
+        {
+          "label": "Jump",
+          "action": "JUMP",
+          "big": true
+        }
+      ]
+    },
+    "warlock": {
+      "right_column": [
+        {
+          "label": "Pet Atk",
+          "action": "BONUSACTIONBUTTON1"
+        },
+        {
+          "label": "Follow",
+          "action": "BONUSACTIONBUTTON2"
+        },
+        {
+          "label": "Stay",
+          "action": "BONUSACTIONBUTTON3"
+        },
+        {
+          "label": "Pet 1",
+          "action": "BONUSACTIONBUTTON4"
+        },
+        {
+          "label": "Pet 2",
+          "action": "BONUSACTIONBUTTON5"
+        },
+        {
+          "label": "Tab",
+          "action": "TARGETNEARESTENEMY",
+          "big": true
+        },
+        {
+          "label": "Jump",
+          "action": "JUMP",
+          "big": true
+        }
+      ]
+    },
+    "druid": {
+      "right_column": [
+        {
+          "label": "Bear",
+          "action": "SHAPESHIFTBUTTON1"
+        },
+        {
+          "label": "Aquatic",
+          "action": "SHAPESHIFTBUTTON2"
+        },
+        {
+          "label": "Cat",
+          "action": "SHAPESHIFTBUTTON3"
+        },
+        {
+          "label": "Travel",
+          "action": "SHAPESHIFTBUTTON4"
+        },
+        {
+          "label": "Tab",
+          "action": "TARGETNEARESTENEMY",
+          "big": true
+        },
+        {
+          "label": "Jump",
+          "action": "JUMP",
+          "big": true
+        }
+      ]
+    },
+    "rogue": {
+      "right_column": [
+        {
+          "label": "Stealth",
+          "action": "SHAPESHIFTBUTTON1"
+        },
+        {
+          "label": "Tab",
+          "action": "TARGETNEARESTENEMY",
+          "big": true
+        },
+        {
+          "label": "Jump",
+          "action": "JUMP",
+          "big": true
+        }
+      ]
+    },
+    "priest": {
+      "right_column": [
+        {
+          "label": "Shadow",
+          "action": "SHAPESHIFTBUTTON1"
+        },
+        {
+          "label": "Tab",
+          "action": "TARGETNEARESTENEMY",
+          "big": true
+        },
+        {
+          "label": "Jump",
+          "action": "JUMP",
+          "big": true
+        }
+      ]
+    },
+    "paladin": {
+      "right_column": [
+        {
+          "label": "Tab",
+          "action": "TARGETNEARESTENEMY",
+          "big": true
+        },
+        {
+          "label": "Jump",
+          "action": "JUMP",
+          "big": true
+        }
+      ]
+    },
+    "mage": {
+      "right_column": [
+        {
+          "label": "Tab",
+          "action": "TARGETNEARESTENEMY",
+          "big": true
+        },
+        {
+          "label": "Jump",
+          "action": "JUMP",
+          "big": true
+        }
+      ]
+    },
+    "shaman": {
+      "right_column": [
+        {
+          "label": "Tab",
+          "action": "TARGETNEARESTENEMY",
+          "big": true
+        },
+        {
+          "label": "Jump",
+          "action": "JUMP",
+          "big": true
+        }
+      ]
+    }
+  },
+  "menu_game": [
+    {
+      "label": "Character",
+      "action": "TOGGLECHARACTER0"
+    },
+    {
+      "label": "Spellbook",
+      "action": "TOGGLESPELLBOOK"
+    },
+    {
+      "label": "Talents",
+      "action": "TOGGLETALENTS"
+    },
+    {
+      "label": "Quest log",
+      "action": "TOGGLEQUESTLOG"
+    },
+    {
+      "label": "Nameplates",
+      "action": "NAMEPLATES"
+    },
+    {
+      "label": "Game interface",
+      "action": "TOGGLEUI"
+    }
+  ],
+  "fade_after_ms": 3000,
+  "fade_opacity": 0.5,
+  "mouse": true,
+  "_mouse_comment": "mouse:false makes the phone send no mouse events at all (taps, camera drag, pinch): an emergency switch.",
+  "_hud_comment": "The Hide button removes all phone controls; the eye icon in the corner brings them back. Menu > Game interface hides the game's own UI (Alt-Z)."
+}
