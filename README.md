@@ -44,6 +44,10 @@ Unbound actions render struck through.
 - Right column: stances (Ctrl+1/2/3), Tab target, Jump. Top: Esc, Map, Bags, Char, Spells, Talents, Quests, Chat, auto-run, Sit, nameplates.
 - Chat opens the iPhone keyboard; return sends via Enter, text, Enter.
 
+## Camera
+Cam (top of the right column): tap snaps the camera behind the character, facing where it faces. Press and hold to save
+the current camera angle and zoom; from then on a tap returns to that. Uses the game's saved view 5 through the addon.
+
 ## Keys
 Keys (top right) opens the iPhone keyboard; every key you press is pressed in the game, so key bindings fire
 (O = social, N = talents, a capital letter = Shift + that key). The bar at the top adds one-shot ⇧ ⌃ ⌥ ⌘, Esc and

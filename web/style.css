@@ -210,3 +210,7 @@ body.mouse-mode #cursor { display: block; }
 #keylast.flash { animation: keyflash 500ms var(--ease-out); }
 @keyframes keyflash { from { color: var(--accent); transform: scale(1.12); } to { color: var(--text); transform: scale(1); } }
 #keydone { color: var(--accent-ink); background: var(--accent); }
+
+/* camera snap button: top of the right column; flashes when an angle is saved */
+.btn.camera { min-width: 60px; height: 30px; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.btn.camera.saved { border-color: var(--ok); color: var(--ok); }

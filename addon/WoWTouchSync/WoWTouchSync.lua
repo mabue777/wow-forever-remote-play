@@ -34,6 +34,26 @@ local BUTTON_FRAME = {
 }
 
 local owner = CreateFrame("Frame")
+
+-- Camera button for the phone. Left click: snap the camera to saved view 5 (behind the character, facing where the
+-- character faces). Right click: save the current camera angle and zoom as view 5. Calling SetView twice skips the
+-- smooth camera blend so the snap is instant. Until a view is saved, view 5 is reset to the game's standard view.
+local camera = CreateFrame("Button", "WoWTouchCamera", UIParent)
+camera:RegisterForClicks("AnyUp", "AnyDown")
+camera:SetScript("OnClick", function(_, button, down)
+  if down == false then return end
+  if button == "RightButton" then
+    SaveView(5)
+    WoWTouchSyncCam = true
+    print("WoW Touch: camera angle saved. The camera button now returns to it.")
+  else
+    if not WoWTouchSyncCam then ResetView(5) end
+    SetView(5)
+    SetView(5)
+  end
+end)
+-- pseudo actions the phone asks for; they click the camera button instead of running a game binding
+local CLICKS = { WOWTOUCH_CAMRESET = "LeftButton", WOWTOUCH_CAMSAVE = "RightButton" }
 local phoneKeys = {} -- action -> spare key assigned this session
 local busy, pending, lastAssign = false, false, 0
 
@@ -48,6 +68,13 @@ local function assign()
     if not act or act == "" then free[#free + 1] = key end
   end
   local n = 1
+  for _, action in ipairs({ "WOWTOUCH_CAMRESET", "WOWTOUCH_CAMSAVE" }) do
+    if free[n] then
+      SetOverrideBindingClick(owner, false, free[n], "WoWTouchCamera", CLICKS[action])
+      phoneKeys[action] = free[n]
+      n = n + 1
+    end
+  end
   for _, action in ipairs(ACTIONS) do
     if not GetBindingKey(action) and free[n] then
       SetOverrideBinding(owner, false, free[n], action)
@@ -79,6 +106,9 @@ local function snapshot()
   out[#out + 1] = "char " .. (name or "?") .. "-" .. (realm or GetRealmName() or "?")
   out[#out + 1] = "class " .. (class or "?")
   out[#out + 1] = "time " .. time()
+  for _, action in ipairs({ "WOWTOUCH_CAMRESET", "WOWTOUCH_CAMSAVE" }) do
+    if phoneKeys[action] then out[#out + 1] = "phone " .. action .. " " .. phoneKeys[action] end
+  end
   for _, action in ipairs(ACTIONS) do
     local keys = { GetBindingKey(action) }
     for _, k in ipairs(keys) do out[#out + 1] = "bind " .. action .. " " .. k end

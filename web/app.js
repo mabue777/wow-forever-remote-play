@@ -15,6 +15,7 @@ function allActions() {
   const add = (a) => { if (!a) return; (Array.isArray(a) ? a : [a]).forEach((x) => acts.add(x)); };
   const walk = (defs) => (defs || []).forEach((d) => add(d.action));
   walk(layout.top_left); walk(layout.top_right); walk(layout.menu_game);
+  if (layout.camera_button) { add(layout.camera_button.action); add(layout.camera_button.hold); }
   Object.values(layout.joystick).forEach(add);
   (layout.actionbar.actions || []).forEach(add);
   (layout.actionbar2 && layout.actionbar2.actions || []).forEach(add);
@@ -485,6 +486,7 @@ function makeBtn(def, cls = "") {
   if (def.showKey !== false && ref.label) {
     const k = document.createElement("span"); k.className = "key"; k.textContent = ref.label; b.appendChild(k);
   }
+  if (def.hold) return holdButton(b, ref, def);
   let down = false;
   b.addEventListener("pointerdown", (e) => {
     e.preventDefault(); b.setPointerCapture(e.pointerId); down = true; b.classList.add("active");
@@ -499,6 +501,26 @@ function makeBtn(def, cls = "") {
     }
   };
   b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up);
+  return b;
+}
+// tap = action, press and hold = the "hold" action (camera: tap snaps behind the character, hold saves the angle)
+function holdButton(b, ref, def) {
+  const holdRef = resolve(def.hold);
+  let timer = null, held = false;
+  b.addEventListener("pointerdown", (e) => {
+    e.preventDefault(); b.classList.add("active"); held = false;
+    if (holdRef) timer = setTimeout(() => {
+      held = true; actionTap(def.hold);
+      b.classList.add("saved"); navigator.vibrate && navigator.vibrate(20);
+      setTimeout(() => b.classList.remove("saved"), 900);
+    }, 600);
+  });
+  const up = () => {
+    if (!b.classList.contains("active")) return;
+    b.classList.remove("active"); clearTimeout(timer);
+    if (!held) { refDown(ref); setTimeout(() => refUp(ref), 30); }
+  };
+  b.addEventListener("pointerup", up); b.addEventListener("pointercancel", () => { clearTimeout(timer); b.classList.remove("active"); });
   return b;
 }
 let profileName = localStorage.getItem("wowtouch.profile");
@@ -551,6 +573,7 @@ function build() {
     pb.addEventListener("pointerdown", openPicker);
     tr.appendChild(pb);
   }
+  if (layout.camera_button) rc.appendChild(makeBtn(layout.camera_button, "camera"));
   let group = null;
   L.right_column.forEach((d) => {
     if (d.big) { group = null; rc.appendChild(makeBtn(d)); return; }

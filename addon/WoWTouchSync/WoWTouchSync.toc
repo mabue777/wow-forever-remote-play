@@ -1,5 +1,5 @@
 ## Interface: 16001, 120100, 120105
 ## Title: WoW Touch Sync
 ## Notes: Shares this character's key bindings, class and action bar spells with the WoW Touch phone controller, and gives phone-only keys to buttons you left unbound.
-## SavedVariablesPerCharacter: WoWTouchSyncChar
+## SavedVariablesPerCharacter: WoWTouchSyncChar, WoWTouchSyncCam
 WoWTouchSync.lua
