@@ -44,6 +44,11 @@ Unbound actions render struck through.
 - Right column: stances (Ctrl+1/2/3), Tab target, Jump. Top: Esc, Map, Bags, Char, Spells, Talents, Quests, Chat, auto-run, Sit, nameplates.
 - Chat opens the iPhone keyboard; return sends via Enter, text, Enter.
 
+## Sound
+The capture tool also records the Mac's sound (ScreenCaptureKit), encodes it to Opus with the macOS encoder and hands
+it to the server on fd 3; it streams as its own track in its own stream, so the phone never delays video to match it.
+The speaker button (top right) turns it on; iOS needs that tap before it plays sound. `-noaudio` turns it off.
+
 ## Camera
 Cam (top of the right column): tap snaps the camera behind the character, facing where it faces. Press and hold to save
 the current camera angle and zoom; from then on a tap returns to that. Uses the game's saved view 5 through the addon.

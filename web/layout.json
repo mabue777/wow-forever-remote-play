@@ -92,6 +92,10 @@
       "action": "SITORSTAND"
     },
     {
+      "label": "Sound",
+      "ui": "sound"
+    },
+    {
       "label": "Refresh",
       "ui": "refresh"
     }

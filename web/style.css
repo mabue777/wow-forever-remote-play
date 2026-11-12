@@ -217,3 +217,5 @@ body.mouse-mode #cursor { display: block; }
 
 /* turn dead zone: a faint centre band, inside it the stick only walks */
 #stick::after { content: ""; position: absolute; left: 41%; right: 41%; top: 14%; bottom: 14%; border-radius: 10px; background: rgba(255, 255, 255, 0.04); pointer-events: none; }
+
+.btn.soundbtn.on { color: var(--accent); }

@@ -2,6 +2,7 @@
 // write Annex-B NAL units to stdout. Usage: sckcap [fps] [width] [bitrate_bps]
 import Foundation
 import ScreenCaptureKit
+import AVFoundation
 import VideoToolbox
 import CoreMedia
 
@@ -87,10 +88,57 @@ final class Encoder {
     }
 }
 
+// Game sound: system audio from ScreenCaptureKit, encoded to Opus (20 ms packets) with the macOS encoder and written
+// to file descriptor 3 as [2-byte big-endian length][packet]. Only when the server asks for it (WT_AUDIO=1).
+final class AudioEncoder {
+    let out = FileHandle(fileDescriptor: 3, closeOnDealloc: false)
+    var conv: AVAudioConverter?
+    var outFmt: AVAudioFormat?
+    var dead = false
+    func encode(_ sb: CMSampleBuffer) {
+        guard !dead, let desc = CMSampleBufferGetFormatDescription(sb) else { return }
+        let inFmt = AVAudioFormat(cmAudioFormatDescription: desc)
+        if conv == nil {
+            var d = AudioStreamBasicDescription(mSampleRate: 48000, mFormatID: kAudioFormatOpus, mFormatFlags: 0, mBytesPerPacket: 0,
+                                                mFramesPerPacket: 960, mBytesPerFrame: 0, mChannelsPerFrame: 2, mBitsPerChannel: 0, mReserved: 0)
+            guard let of = AVAudioFormat(streamDescription: &d), let c = AVAudioConverter(from: inFmt, to: of) else { log("audio: no Opus encoder"); dead = true; return }
+            c.bitRate = 96000
+            conv = c; outFmt = of
+            log("audio: \(inFmt.sampleRate) Hz x\(inFmt.channelCount) -> Opus 96 kbps")
+        }
+        let frames = AVAudioFrameCount(CMSampleBufferGetNumSamples(sb))
+        guard frames > 0, let pcm = AVAudioPCMBuffer(pcmFormat: inFmt, frameCapacity: frames) else { return }
+        pcm.frameLength = frames
+        guard CMSampleBufferCopyPCMDataIntoAudioBufferList(sb, at: 0, frameCount: Int32(frames), into: pcm.mutableAudioBufferList) == noErr else { return }
+        var fed = false
+        while let conv = conv, let outFmt = outFmt {
+            let buf = AVAudioCompressedBuffer(format: outFmt, packetCapacity: 16, maximumPacketSize: max(conv.maximumOutputPacketSize, 1500))
+            var err: NSError?
+            _ = conv.convert(to: buf, error: &err) { _, status in
+                if fed { status.pointee = .noDataNow; return nil }
+                fed = true; status.pointee = .haveData; return pcm
+            }
+            if buf.packetCount == 0 { break }
+            guard let descs = buf.packetDescriptions else { break }
+            var data = Data()
+            for i in 0..<Int(buf.packetCount) {
+                let pd = descs[i]
+                let n = Int(pd.mDataByteSize)
+                data.append(UInt8(n >> 8)); data.append(UInt8(n & 0xff))
+                data.append(Data(bytes: buf.data.advanced(by: Int(pd.mStartOffset)), count: n))
+            }
+            do { try out.write(contentsOf: data) } catch { log("audio: output closed"); dead = true; return }
+        }
+    }
+}
+let audioOn = ProcessInfo.processInfo.environment["WT_AUDIO"] == "1"
+
 final class Output: NSObject, SCStreamOutput, SCStreamDelegate {
+    let audio = AudioEncoder()
     let enc = Encoder()
     var ready = false
     func stream(_ stream: SCStream, didOutputSampleBuffer sb: CMSampleBuffer, of type: SCStreamOutputType) {
+        if type == .audio { if sb.isValid { audio.encode(sb) }; return }
         guard type == .screen, sb.isValid, let pb = CMSampleBufferGetImageBuffer(sb) else { return }
         if let att = CMSampleBufferGetSampleAttachmentsArray(sb, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
            let s = att.first?[.status] as? Int, s != SCFrameStatus.complete.rawValue { return }
@@ -116,8 +164,10 @@ Task {
         cfg.pixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
         cfg.showsCursor = false
         cfg.colorSpaceName = CGColorSpace.sRGB
+        if audioOn { cfg.capturesAudio = true; cfg.sampleRate = 48000; cfg.channelCount = 2; cfg.excludesCurrentProcessAudio = true }
         let s = SCStream(filter: filter, configuration: cfg, delegate: output)
         try s.addStreamOutput(output, type: .screen, sampleHandlerQueue: DispatchQueue(label: "cap", qos: .userInteractive))
+        if audioOn { try s.addStreamOutput(output, type: .audio, sampleHandlerQueue: DispatchQueue(label: "audio", qos: .userInteractive)) }
         try await s.startCapture()
         stream = s
         log("sckcap: capturing display \(display.width)x\(display.height) -> \(cfg.width)x\(cfg.height) @\(fps)")

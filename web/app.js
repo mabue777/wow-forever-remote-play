@@ -111,7 +111,11 @@ async function startVideo() {
   prevStats = null; hist = [];
   pc = new RTCPeerConnection({ iceServers: [] });
   pc.addTransceiver("video", { direction: "recvonly" });
-  pc.ontrack = (ev) => { video.srcObject = ev.streams[0]; video.play().catch(() => {}); };
+  pc.addTransceiver("audio", { direction: "recvonly" });
+  pc.ontrack = (ev) => {
+    if (ev.track.kind === "audio") { sound.srcObject = ev.streams[0] || new MediaStream([ev.track]); applySound(); return; }
+    video.srcObject = ev.streams[0]; video.play().catch(() => {});
+  };
   pc.onicecandidate = (ev) => { if (ev.candidate) send({ t: "cand", cand: ev.candidate.toJSON() }); };
   pc.onconnectionstatechange = () => {
     status.textContent = pc.connectionState === "connected" ? "Live" : pc.connectionState;
@@ -484,6 +488,11 @@ function makeBtn(def, cls = "") {
   }
   if (def.ui === "chat") { b.addEventListener("pointerdown", openChat); return b; }
   if (def.ui === "menu") { b.addEventListener("pointerdown", openMenu); return b; }
+  if (def.ui === "sound") {
+    b.classList.add("icon", "soundbtn"); b.setAttribute("aria-label", "Game sound"); b.innerHTML = soundIcon(); b.classList.toggle("on", soundOn);
+    b.addEventListener("pointerdown", (e) => { e.preventDefault(); soundOn = !soundOn; localStorage.setItem("wowtouch.sound", soundOn ? "on" : "off"); applySound(); });
+    return b;
+  }
   if (def.ui === "keys") { b.addEventListener("pointerdown", openKeys); return b; }
   if (def.ui === "mousemode") {
     b.classList.add("toggle-text", "mousemode");
@@ -682,6 +691,22 @@ keybar.querySelectorAll("[data-key]").forEach((b) => b.addEventListener("pointer
   e.preventDefault(); pressNamed(b.dataset.key, b.textContent); keyinput.focus();
 }));
 $("#keydone").addEventListener("pointerdown", (e) => { e.preventDefault(); closeKeys(); });
+
+// ---------- sound: its own <audio> element (separate stream, so video is never delayed to match it) ----------
+// iOS only starts sound from a tap, so the choice is remembered and re-applied on the next touch.
+const sound = $("#sound");
+let soundOn = localStorage.getItem("wowtouch.sound") === "on";
+function applySound() {
+  sound.muted = !soundOn;
+  if (soundOn) sound.play().catch(() => {});
+  document.querySelectorAll(".btn.soundbtn").forEach((b) => { b.classList.toggle("on", soundOn); b.innerHTML = soundIcon(); });
+}
+function soundIcon() {
+  return soundOn
+    ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3h-2.5z"/><path d="M11 5.5a3.5 3.5 0 0 1 0 5"/><path d="M12.8 3.5a6 6 0 0 1 0 9"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3h-2.5z"/><path d="M11 6l3.5 4M14.5 6L11 10"/></svg>';
+}
+document.addEventListener("pointerdown", () => { if (soundOn && sound.paused) sound.play().catch(() => {}); }, { capture: true, passive: true });
 
 // ---------- Mac menu: launcher and desktop helpers ----------
 const MENU = [

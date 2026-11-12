@@ -35,6 +35,7 @@ var (
 	width       = flag.Int("width", 1280, "stream width (height follows aspect)")
 	bitrate     = flag.String("bitrate", "6M", "video bitrate")
 	noVideo     = flag.Bool("novideo", false, "disable ffmpeg capture (input only)")
+	noAudio     = flag.Bool("noaudio", false, "do not capture or stream game sound")
 	logPath     = flag.String("log", "", "log file (default: stderr; /tmp/wowtouch.log when run as an app bundle)")
 	wtfDir      = flag.String("wtf", "/Applications/World of Warcraft/_forever_/WTF", "WoW WTF folder (for key bindings)")
 	capture     = flag.String("capture", "sck", "capture backend: sck (ScreenCaptureKit tool) or ffmpeg (avfoundation)")
@@ -65,7 +66,8 @@ type hub struct {
 	lastHold  time.Time    // last sign of life from the finger that holds a mouse button
 	lastInput atomic.Int64 // unix ms of the last input message from any phone
 	keyMu     sync.Mutex
-	lastKey   []byte // most recent keyframe access unit (Annex-B), for /snapshot
+	lastKey   []byte                         // most recent keyframe access unit (Annex-B), for /snapshot
+	audio     *webrtc.TrackLocalStaticSample // game sound, see audio.go
 	turnMu    sync.Mutex
 	turnRate  float64 // -1 left .. 1 right, see turn.go
 	turnLeft  turnKey
@@ -110,6 +112,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	h.audio = newAudioTrack()
 
 	me := &webrtc.MediaEngine{}
 	if err := me.RegisterDefaultCodecs(); err != nil {
@@ -211,12 +215,23 @@ func (h *hub) runCapture() {
 
 func (h *hub) captureOnce() {
 	var cmd *exec.Cmd
+	var audioWriter *os.File
 	if *capture == "sck" {
 		exe := capturePath
 		if exe == "" {
 			exe, _ = filepath.Abs(filepath.Join(filepath.Dir(*webDir), "tools", "sckcap"))
 		}
 		cmd = exec.Command(exe, fmt.Sprint(*fps), fmt.Sprint(*width), fmt.Sprint(parseBitrate(*bitrate)))
+		if !*noAudio {
+			if ar, aw, err := os.Pipe(); err == nil {
+				cmd.ExtraFiles = []*os.File{aw} // fd 3 in sckcap
+				cmd.Env = append(os.Environ(), "WT_AUDIO=1")
+				defer ar.Close()
+				go h.pumpAudio(ar)
+				defer aw.Close() // the parent's copy; closed after Start below too
+				audioWriter = aw
+			}
+		}
 	} else {
 		// select: pass a frame only if at least 1/(fps+5) s passed since the last one (rate cap without duplicating frames)
 		vf := fmt.Sprintf("select='isnan(prev_selected_t)+gte(t-prev_selected_t\\,1/%d)',scale=%d:-2", *fps+5, *width)
@@ -244,6 +259,9 @@ func (h *hub) captureOnce() {
 	if err := cmd.Start(); err != nil {
 		log.Printf("ffmpeg start: %v", err)
 		return
+	}
+	if audioWriter != nil {
+		audioWriter.Close() // only sckcap holds the write end now, so its exit ends pumpAudio
 	}
 	h.mu.Lock()
 	h.ffmpeg = cmd
@@ -448,6 +466,17 @@ func (h *hub) handleWS(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			p.Close()
 			return err
+		}
+		if asender, err := p.AddTrack(h.audio); err == nil {
+			go func() { // drain RTCP so the sender's interceptors keep working
+				for {
+					if _, _, err := asender.ReadRTCP(); err != nil {
+						return
+					}
+				}
+			}()
+		} else {
+			log.Printf("audio track: %v", err)
 		}
 		go func() {
 			lastLog := time.Now()
