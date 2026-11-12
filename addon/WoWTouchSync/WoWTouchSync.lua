@@ -99,21 +99,10 @@ local function spellOn(slot)
   return name or GetActionText(slot)
 end
 
-local function snapshot()
+-- spells on the phone's buttons, re-read whenever the bars change (the bars are torn down before PLAYER_LOGOUT)
+local spellLines = {}
+local function readSpells()
   local out = {}
-  local name, realm = UnitFullName("player")
-  local _, class = UnitClass("player")
-  out[#out + 1] = "char " .. (name or "?") .. "-" .. (realm or GetRealmName() or "?")
-  out[#out + 1] = "class " .. (class or "?")
-  out[#out + 1] = "time " .. time()
-  for _, action in ipairs({ "WOWTOUCH_CAMRESET", "WOWTOUCH_CAMSAVE" }) do
-    if phoneKeys[action] then out[#out + 1] = "phone " .. action .. " " .. phoneKeys[action] end
-  end
-  for _, action in ipairs(ACTIONS) do
-    local keys = { GetBindingKey(action) }
-    for _, k in ipairs(keys) do out[#out + 1] = "bind " .. action .. " " .. k end
-    if phoneKeys[action] then out[#out + 1] = "phone " .. action .. " " .. phoneKeys[action] end
-  end
   for prefix, frame in pairs(BUTTON_FRAME) do
     for i = 1, 12 do
       local btn = _G[frame .. i]
@@ -132,6 +121,26 @@ local function snapshot()
       end
     end
   end
+  if #out > 0 then spellLines = out end
+end
+
+local function snapshot()
+  local out = {}
+  local name, realm = UnitFullName("player")
+  local _, class = UnitClass("player")
+  out[#out + 1] = "char " .. (name or "?") .. "-" .. (realm or GetRealmName() or "?")
+  out[#out + 1] = "class " .. (class or "?")
+  out[#out + 1] = "time " .. time()
+  for _, action in ipairs({ "WOWTOUCH_CAMRESET", "WOWTOUCH_CAMSAVE" }) do
+    if phoneKeys[action] then out[#out + 1] = "phone " .. action .. " " .. phoneKeys[action] end
+  end
+  for _, action in ipairs(ACTIONS) do
+    local keys = { GetBindingKey(action) }
+    for _, k in ipairs(keys) do out[#out + 1] = "bind " .. action .. " " .. k end
+    if phoneKeys[action] then out[#out + 1] = "phone " .. action .. " " .. phoneKeys[action] end
+  end
+  -- action bars are already empty at logout, so use what was read while playing
+  for _, line in ipairs(spellLines) do out[#out + 1] = line end
   WoWTouchSyncChar = out
 end
 
@@ -139,8 +148,18 @@ owner:RegisterEvent("PLAYER_LOGIN")
 owner:RegisterEvent("UPDATE_BINDINGS")
 owner:RegisterEvent("PLAYER_REGEN_ENABLED")
 owner:RegisterEvent("PLAYER_LOGOUT")
+for _, ev in ipairs({ "PLAYER_ENTERING_WORLD", "ACTIONBAR_SLOT_CHANGED", "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR",
+  "UPDATE_SHAPESHIFT_FORMS", "UPDATE_SHAPESHIFT_FORM", "SPELLS_CHANGED" }) do owner:RegisterEvent(ev) end
+local spellsQueued = false
 owner:SetScript("OnEvent", function(_, event)
   if event == "PLAYER_LOGOUT" then snapshot() return end
+  if event ~= "PLAYER_LOGIN" and event ~= "UPDATE_BINDINGS" and event ~= "PLAYER_REGEN_ENABLED" then
+    if not spellsQueued then -- bars change in bursts; read once after the burst
+      spellsQueued = true
+      C_Timer.After(0.5, function() spellsQueued = false; readSpells() end)
+    end
+    return
+  end
   if event == "PLAYER_REGEN_ENABLED" and not pending then return end
   -- our own SetOverrideBinding calls fire UPDATE_BINDINGS too; ignore those echoes
   if busy or (event == "UPDATE_BINDINGS" and GetTime() - lastAssign < 1) then return end

@@ -571,7 +571,7 @@ function openPicker(e) {
 $("#picker").addEventListener("pointerdown", (e) => { if (e.target === e.currentTarget) e.currentTarget.hidden = true; });
 
 // the spell on an action button, from the game (addon); null when unknown
-function spellOf(action) { return (bindings.spells || {})[action] || null; }
+function spellOf(action) { const n = ((bindings.spells || {})[action] || "").trim(); return n || null; } // blank macro names fall back to the number
 // "Heroic Strike" -> "HS", "Charge" -> "Char": fits a 40px cell
 function shortName(name) {
   const words = name.replace(/[^\p{L}\p{N} ]/gu, "").split(/\s+/).filter(Boolean);
